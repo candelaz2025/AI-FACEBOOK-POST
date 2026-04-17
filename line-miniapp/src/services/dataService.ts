@@ -13,6 +13,7 @@ import {
   OrderStatus,
   CartItem,
   MemberTier,
+  Promotion,
 } from '@/types';
 import {
   INITIAL_CATEGORIES,
@@ -22,12 +23,13 @@ import {
 } from '@/data/mockData';
 
 const KEYS = {
-  categories: 'coffeeCRM_categories',
-  menuItems:  'coffeeCRM_menuItems',
-  members:    'coffeeCRM_members',
-  orders:     'coffeeCRM_orders',
-  orderSeq:   'coffeeCRM_orderSeq',
-  queueSeq:   'coffeeCRM_queueSeq',
+  categories:  'coffeeCRM_categories',
+  menuItems:   'coffeeCRM_menuItems',
+  members:     'coffeeCRM_members',
+  orders:      'coffeeCRM_orders',
+  orderSeq:    'coffeeCRM_orderSeq',
+  queueSeq:    'coffeeCRM_queueSeq',
+  promotions:  'coffeeCRM_promotions',
 };
 
 // ---- helpers ----
@@ -343,5 +345,99 @@ export const orderService = {
       });
     }
     return result;
+  },
+};
+
+// ============================================================
+// Promotions
+// ============================================================
+const INITIAL_PROMOTIONS: Promotion[] = [
+  {
+    id: 'promo-1',
+    name: 'ลด 15% วันเกิด',
+    description: 'ส่วนลดพิเศษสำหรับสมาชิกในเดือนเกิด',
+    discountType: 'percent',
+    discountValue: 15,
+    minOrderAmount: 100,
+    maxDiscount: 50,
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString().slice(0, 10),
+    isActive: true,
+    usageCount: 12,
+    maxUsage: 100,
+  },
+  {
+    id: 'promo-2',
+    name: 'Happy Hour ลด 20 บาท',
+    description: 'ทุกวันจันทร์–ศุกร์ เวลา 14:00–16:00',
+    discountType: 'baht',
+    discountValue: 20,
+    minOrderAmount: 80,
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10),
+    isActive: true,
+    usageCount: 45,
+  },
+  {
+    id: 'promo-3',
+    name: 'สมาชิกใหม่ลด 30 บาท',
+    description: 'สำหรับสมาชิกใหม่ที่เพิ่งสมัคร (ใช้ได้ครั้งแรกเท่านั้น)',
+    discountType: 'baht',
+    discountValue: 30,
+    minOrderAmount: 80,
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 10),
+    isActive: true,
+    usageCount: 28,
+    maxUsage: 1000,
+  },
+];
+
+export const promotionService = {
+  getAll: (): Promotion[] => {
+    const raw = localStorage.getItem(KEYS.promotions);
+    return raw ? JSON.parse(raw) : INITIAL_PROMOTIONS;
+  },
+
+  getActive: (): Promotion[] => {
+    const now = new Date().toISOString().slice(0, 10);
+    return promotionService.getAll().filter(p =>
+      p.isActive && p.startDate <= now && p.endDate >= now &&
+      (!p.maxUsage || p.usageCount < p.maxUsage)
+    );
+  },
+
+  getById: (id: string): Promotion | undefined =>
+    promotionService.getAll().find(p => p.id === id),
+
+  create: (data: Omit<Promotion, 'id' | 'usageCount'>): Promotion => {
+    const promo: Promotion = { ...data, id: uuidv4(), usageCount: 0 };
+    const all = promotionService.getAll();
+    save(KEYS.promotions, [...all, promo]);
+    return promo;
+  },
+
+  update: (id: string, data: Partial<Promotion>): Promotion => {
+    const all = promotionService.getAll();
+    const idx = all.findIndex(p => p.id === id);
+    if (idx === -1) throw new Error('ไม่พบโปรโมชั่น');
+    all[idx] = { ...all[idx], ...data };
+    save(KEYS.promotions, all);
+    return all[idx];
+  },
+
+  delete: (id: string): void => {
+    save(KEYS.promotions, promotionService.getAll().filter(p => p.id !== id));
+  },
+
+  toggleActive: (id: string): Promotion => {
+    const p = promotionService.getById(id);
+    if (!p) throw new Error('ไม่พบโปรโมชั่น');
+    return promotionService.update(id, { isActive: !p.isActive });
+  },
+
+  incrementUsage: (id: string): void => {
+    const p = promotionService.getById(id);
+    if (p) promotionService.update(id, { usageCount: p.usageCount + 1 });
   },
 };

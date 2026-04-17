@@ -1,9 +1,144 @@
 import React, { useState, useCallback } from 'react';
-import { MenuItem, MenuCategory } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
+import { MenuItem, MenuCategory, MenuOption, MenuOptionChoice } from '@/types';
 import { menuService, categoryService } from '@/services/dataService';
 import { Modal } from '@/components/shared/Modal';
 import { TagBadge } from '@/components/shared/Badge';
 import { useNotify } from '@/contexts/AppContext';
+
+// ============================================================
+// Option Editor
+// ============================================================
+function OptionEditor({
+  options,
+  onChange,
+}: {
+  options: MenuOption[];
+  onChange: (opts: MenuOption[]) => void;
+}) {
+  const addOption = () => {
+    onChange([
+      ...options,
+      { id: uuidv4(), name: '', required: false, choices: [{ label: '', priceDiff: 0 }] },
+    ]);
+  };
+
+  const updateOption = (idx: number, patch: Partial<MenuOption>) => {
+    const next = options.map((o, i) => (i === idx ? { ...o, ...patch } : o));
+    onChange(next);
+  };
+
+  const removeOption = (idx: number) => onChange(options.filter((_, i) => i !== idx));
+
+  const addChoice = (optIdx: number) => {
+    const next = options.map((o, i) =>
+      i === optIdx ? { ...o, choices: [...o.choices, { label: '', priceDiff: 0 }] } : o
+    );
+    onChange(next);
+  };
+
+  const updateChoice = (optIdx: number, chIdx: number, patch: Partial<MenuOptionChoice>) => {
+    const next = options.map((o, i) =>
+      i === optIdx
+        ? { ...o, choices: o.choices.map((c, j) => (j === chIdx ? { ...c, ...patch } : c)) }
+        : o
+    );
+    onChange(next);
+  };
+
+  const removeChoice = (optIdx: number, chIdx: number) => {
+    const next = options.map((o, i) =>
+      i === optIdx ? { ...o, choices: o.choices.filter((_, j) => j !== chIdx) } : o
+    );
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-semibold text-gray-600">ตัวเลือก (Options)</label>
+        <button
+          type="button"
+          onClick={addOption}
+          className="text-xs text-coffee-700 font-medium hover:underline"
+        >
+          + เพิ่มตัวเลือก
+        </button>
+      </div>
+
+      {options.map((opt, optIdx) => (
+        <div key={opt.id} className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+          {/* Option header */}
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              value={opt.name}
+              onChange={e => updateOption(optIdx, { name: e.target.value })}
+              placeholder="ชื่อตัวเลือก (เช่น ขนาด, ความหวาน)"
+              className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
+            />
+            <label className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer whitespace-nowrap">
+              <input
+                type="checkbox"
+                checked={opt.required}
+                onChange={e => updateOption(optIdx, { required: e.target.checked })}
+                className="accent-coffee-700"
+              />
+              จำเป็น
+            </label>
+            <button
+              type="button"
+              onClick={() => removeOption(optIdx)}
+              className="text-red-400 hover:text-red-600 text-sm"
+            >
+              🗑️
+            </button>
+          </div>
+
+          {/* Choices */}
+          <div className="space-y-1.5 mb-2">
+            {opt.choices.map((choice, chIdx) => (
+              <div key={chIdx} className="flex items-center gap-2">
+                <input
+                  value={choice.label}
+                  onChange={e => updateChoice(optIdx, chIdx, { label: e.target.value })}
+                  placeholder="ชื่อตัวเลือก (เช่น M, L, ไม่หวาน)"
+                  className="flex-1 px-2 py-1 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                />
+                <input
+                  type="number"
+                  value={choice.priceDiff === 0 ? '' : choice.priceDiff}
+                  onChange={e => updateChoice(optIdx, chIdx, { priceDiff: Number(e.target.value) || 0 })}
+                  placeholder="+฿0"
+                  className="w-16 px-2 py-1 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400 text-right"
+                />
+                {opt.choices.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeChoice(optIdx, chIdx)}
+                    className="text-gray-400 hover:text-red-500 text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => addChoice(optIdx)}
+            className="text-xs text-blue-600 hover:underline"
+          >
+            + เพิ่มตัวเลือกย่อย
+          </button>
+        </div>
+      ))}
+
+      {options.length === 0 && (
+        <p className="text-xs text-gray-400 text-center py-2">ยังไม่มีตัวเลือก — กดเพิ่มตัวเลือกด้านบน</p>
+      )}
+    </div>
+  );
+}
 
 // ============================================================
 // Menu Item Form
@@ -27,6 +162,7 @@ function MenuItemForm({
   const [isAvailable, setIsAvailable] = useState(initial?.isAvailable ?? true);
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
+  const [options, setOptions] = useState<MenuOption[]>(initial?.options ?? []);
 
   const PRESET_TAGS = ['ขายดี', 'ใหม่', 'แนะนำ'];
 
@@ -45,7 +181,7 @@ function MenuItemForm({
       price,
       categoryId,
       isAvailable,
-      options: initial?.options ?? [],
+      options,
       tags,
     });
   };
@@ -138,6 +274,11 @@ function MenuItemForm({
             ))}
           </div>
         )}
+      </div>
+
+      {/* Option editor */}
+      <div className="border-t border-gray-100 pt-4">
+        <OptionEditor options={options} onChange={setOptions} />
       </div>
 
       {/* Availability toggle */}

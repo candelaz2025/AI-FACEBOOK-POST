@@ -13,8 +13,10 @@ import ProfilePage from '@/pages/customer/ProfilePage';
 
 // Admin pages
 import DashboardPage from '@/pages/admin/DashboardPage';
+import KitchenDisplayPage from '@/pages/admin/KitchenDisplayPage';
 import OrderManagementPage from '@/pages/admin/OrderManagementPage';
 import MenuManagementPage from '@/pages/admin/MenuManagementPage';
+import PromotionsPage from '@/pages/admin/PromotionsPage';
 import MemberManagementPage from '@/pages/admin/MemberManagementPage';
 import ReportsPage from '@/pages/admin/ReportsPage';
 
@@ -68,8 +70,10 @@ function AdminRoutes() {
     <AdminLayout>
       <Routes>
         <Route path="/admin" element={<DashboardPage />} />
+        <Route path="/admin/kitchen" element={<KitchenDisplayPage />} />
         <Route path="/admin/orders" element={<OrderManagementPage />} />
         <Route path="/admin/menu" element={<MenuManagementPage />} />
+        <Route path="/admin/promotions" element={<PromotionsPage />} />
         <Route path="/admin/members" element={<MemberManagementPage />} />
         <Route path="/admin/reports" element={<ReportsPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />

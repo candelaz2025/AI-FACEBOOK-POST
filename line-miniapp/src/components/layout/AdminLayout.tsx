@@ -9,11 +9,13 @@ interface AdminNavItem {
 }
 
 const adminNavItems: AdminNavItem[] = [
-  { to: '/admin',         label: 'แดชบอร์ด',    icon: '📊' },
-  { to: '/admin/orders',  label: 'ออเดอร์',      icon: '🧾' },
-  { to: '/admin/menu',    label: 'จัดการเมนู',   icon: '📋' },
-  { to: '/admin/members', label: 'สมาชิก',       icon: '👥' },
-  { to: '/admin/reports', label: 'รายงาน',       icon: '📈' },
+  { to: '/admin',              label: 'แดชบอร์ด',    icon: '📊' },
+  { to: '/admin/kitchen',      label: 'Kitchen',     icon: '🍳' },
+  { to: '/admin/orders',       label: 'ออเดอร์',     icon: '🧾' },
+  { to: '/admin/menu',         label: 'จัดการเมนู',  icon: '📋' },
+  { to: '/admin/promotions',   label: 'โปรโมชั่น',   icon: '🎁' },
+  { to: '/admin/members',      label: 'สมาชิก',      icon: '👥' },
+  { to: '/admin/reports',      label: 'รายงาน',      icon: '📈' },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {

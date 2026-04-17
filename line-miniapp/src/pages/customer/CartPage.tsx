@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart, useApp, useNotify } from '@/contexts/AppContext';
-import { orderService } from '@/services/dataService';
-import { PaymentMethod } from '@/types';
+import { orderService, promotionService } from '@/services/dataService';
+import { PaymentMethod, Promotion } from '@/types';
 
 const paymentOptions: { value: PaymentMethod; label: string; icon: string }[] = [
   { value: 'cash',      label: 'เงินสด',      icon: '💵' },
@@ -21,6 +21,24 @@ export default function CartPage() {
   const [pointsToUse, setPointsToUse] = useState(0);
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedPromo, setSelectedPromo] = useState<Promotion | null>(null);
+
+  // Available promotions for current member
+  const availablePromos = useMemo(() => {
+    const active = promotionService.getActive();
+    return active.filter(p => {
+      if (p.minOrderAmount && cartTotal < p.minOrderAmount) return false;
+      if (p.requiredTier && currentMember && currentMember.tier !== p.requiredTier) return false;
+      return true;
+    });
+  }, [cartTotal, currentMember]);
+
+  const promoDiscount = useMemo(() => {
+    if (!selectedPromo) return 0;
+    if (selectedPromo.discountType === 'baht') return selectedPromo.discountValue;
+    const pct = (cartTotal * selectedPromo.discountValue) / 100;
+    return selectedPromo.maxDiscount ? Math.min(pct, selectedPromo.maxDiscount) : pct;
+  }, [selectedPromo, cartTotal]);
 
   const maxPoints = currentMember ? Math.min(currentMember.points, Math.floor(cartTotal * 0.3 / 0.1)) : 0;
   const pointsDiscount = pointsToUse * 0.1;
@@ -29,7 +47,7 @@ export default function CartPage() {
     : currentMember?.tier === 'silver' ? 0.03
     : 0;
   const tierDiscountAmount = cartTotal * tierDiscountRate;
-  const total = Math.max(0, cartTotal - tierDiscountAmount - pointsDiscount);
+  const total = Math.max(0, cartTotal - tierDiscountAmount - pointsDiscount - promoDiscount);
 
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
@@ -189,6 +207,46 @@ export default function CartPage() {
         </section>
       )}
 
+      {/* Promotions */}
+      {availablePromos.length > 0 && (
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <h2 className="font-bold text-gray-800 mb-3">🎁 โปรโมชั่นที่ใช้ได้</h2>
+          <div className="space-y-2">
+            {availablePromos.map(promo => (
+              <button
+                key={promo.id}
+                onClick={() => setSelectedPromo(selectedPromo?.id === promo.id ? null : promo)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-sm transition-all ${
+                  selectedPromo?.id === promo.id
+                    ? 'bg-green-50 border-green-400 text-green-800'
+                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:border-coffee-300'
+                }`}
+              >
+                <div className="text-left">
+                  <p className="font-semibold">{promo.name}</p>
+                  {promo.description && (
+                    <p className="text-xs opacity-70 mt-0.5">{promo.description}</p>
+                  )}
+                </div>
+                <div className="text-right ml-3 flex-shrink-0">
+                  <p className="font-bold text-lg">
+                    {promo.discountType === 'baht' ? `−฿${promo.discountValue}` : `−${promo.discountValue}%`}
+                  </p>
+                  {selectedPromo?.id === promo.id && (
+                    <p className="text-xs text-green-600 font-medium">✓ เลือกแล้ว</p>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+          {selectedPromo && (
+            <p className="text-xs text-green-700 font-medium mt-2 text-center">
+              🎉 ประหยัดได้ ฿{promoDiscount.toFixed(0)}!
+            </p>
+          )}
+        </section>
+      )}
+
       {/* Note */}
       <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
         <label className="font-bold text-gray-800 text-sm block mb-2">หมายเหตุออเดอร์ (ถ้ามี)</label>
@@ -212,6 +270,12 @@ export default function CartPage() {
             <div className="flex justify-between text-green-600">
               <span>ส่วนลดสมาชิก ({(tierDiscountRate * 100).toFixed(0)}%)</span>
               <span>−฿{tierDiscountAmount.toFixed(0)}</span>
+            </div>
+          )}
+          {promoDiscount > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span>โปรโมชั่น ({selectedPromo?.name})</span>
+              <span>−฿{promoDiscount.toFixed(0)}</span>
             </div>
           )}
           {pointsDiscount > 0 && (
