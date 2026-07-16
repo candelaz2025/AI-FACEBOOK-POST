@@ -10,6 +10,14 @@ Guidance for AI assistants working in this codebase.
 - UI language: Thai (ภาษาไทย) — keep all user-facing strings in Thai
 - No backend; all state lives in the browser (localStorage)
 
+> **Note:** A separate full-stack automation system (Shopee affiliate product
+> fetching → AI content → omnichannel posting → Google Sheets/Drive logging →
+> LINE OA chatbot) is being built in the `candelaz2025/Post-OmniChannel` repo
+> under `backend/`. Its Facebook/Instagram publisher is a server-side port of
+> this app's `App.tsx` `handlePublish` flow. See
+> `Post-OmniChannel/docs/PRD-shopee-affiliate-automation.md`. This repo's scope
+> (Facebook/Instagram only, browser-only, no backend) is unchanged by that work.
+
 ---
 
 ## Tech Stack
