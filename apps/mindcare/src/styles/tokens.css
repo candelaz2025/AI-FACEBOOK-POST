@@ -1,0 +1,134 @@
+/* Design tokens — ผู้ช่วยดูแลใจ
+   โทนสงบ ฟ้า-เขียว · แดงสงวนไว้สำหรับปุ่มฉุกเฉินเท่านั้น
+   contrast ทุกคู่ต้องผ่าน WCAG 2.1 AA (NFR-04) */
+
+:root {
+  --calm-50: #f2f7f6;
+  --calm-100: #dceae8;
+  --calm-300: #8dbdb6;
+  --calm-500: #3d8b80;
+  --calm-600: #2f6f66;
+  --calm-700: #24564f;
+
+  --ink-900: #16201f;
+  --ink-700: #3a4746;
+  --ink-500: #5f6d6b;
+  --ink-300: #9aa5a3;
+
+  --surface: #ffffff;
+  --surface-alt: var(--calm-50);
+  --border: #d8e2e0;
+
+  /* ใช้เฉพาะเส้นทางความปลอดภัย ห้ามใช้ตกแต่ง */
+  --urgent-600: #b3261e;
+  --urgent-700: #8c1d18;
+
+  --font-base: 16px;
+  --font-lg: 20px;
+  --radius: 14px;
+  --tap-min: 44px;
+  --space: 16px;
+
+  font-family: 'Kanit', 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
+  font-size: var(--font-base);
+  color: var(--ink-900);
+  background: var(--surface-alt);
+}
+
+/* โหมดตัวอักษรใหญ่สำหรับผู้ใช้ 46–60 ปี (ACCT-08, NFR-04) */
+:root[data-scale='large'] {
+  --font-base: var(--font-lg);
+  font-size: var(--font-lg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --calm-50: #101a19;
+    --calm-100: #162523;
+    --ink-900: #eaf1f0;
+    --ink-700: #c3cfcd;
+    --ink-500: #9aa5a3;
+    --surface: #16201f;
+    --surface-alt: #101a19;
+    --border: #2c3a38;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--surface-alt);
+  color: var(--ink-900);
+  line-height: 1.6;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* เป้าแตะขั้นต่ำ 44px ทุกปุ่ม (NFR-04) */
+button {
+  min-height: var(--tap-min);
+  min-width: var(--tap-min);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  padding: 0 var(--space);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--calm-500);
+  outline-offset: 2px;
+}
+
+.mc-primary {
+  background: var(--calm-600);
+  border-color: var(--calm-600);
+  color: #fff;
+}
+
+.mc-urgent {
+  background: var(--urgent-600);
+  border-color: var(--urgent-600);
+  color: #fff;
+}
+
+.mc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space);
+}
+
+.mc-stack > * + * { margin-top: var(--space); }
+
+.mc-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space);
+  padding-bottom: 96px; /* เว้นที่ให้ปุ่มขอความช่วยเหลือ */
+}
+
+.mc-muted { color: var(--ink-500); }
+
+.mc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
