@@ -13,7 +13,7 @@ Draft: Custom OIDC providers (supabase blog/docs): issuer-based discovery, `cust
 Draft: Inngest Pro ~$50/mo 500k step runs (automationatlas, May 2026, INFERRED; conflicts $75 / $25+usage). Trigger.dev Free $0/Hobby $10/Pro $50 = included credit; per-second compute (Small 1x $0.0000338/s) + $0.000025/run; waits >5s checkpointed; Pro concurrency 200, +50 for $10 (trigger.dev/pricing VERIFIED via search summary).
 
 ## ประมาณการค่าใช้จ่ายรายเดือน (1k / 10k users)
-กำลังค้นคว้า
+Draft: Vercel Pro $20/seat + $20 credit/seat, 1TB transfer, Active CPU $0.128/CPU-h (makerkit). Inngest Pro $99 1M exec (budgetforge Jul 2026) conflicts $75/$50. PDPA s.28/29 notifications effective 24 Mar 2024; storage abroad w/o third-party access excluded (tilleke/linklaters). LINE web login id_token HS256 (channel secret) vs ES256 native -> Supabase JWKS verify risk (classmethod, LINE docs).
 
 ## Thai data residency (PDPA)
 กำลังค้นคว้า
