@@ -4,7 +4,7 @@
 กำลังค้นคว้า
 
 ## 1. Orchestrator / Planner-Worker patterns
-กำลังค้นคว้า
+(ร่าง) Anthropic "Building effective agents" (19 ธ.ค. 2024) แยก workflow (code path กำหนดไว้) กับ agent (LLM กำหนดขั้นตอนเอง); orchestrator-workers เหมาะเมื่อ subtask คาดเดาไม่ได้ล่วงหน้า VERIFIED. Anthropic multi-agent research (13 มิ.ย. 2025): multi-agent ใช้ token ~15x ของ chat VERIFIED. กำลังค้นคว้าต่อ
 
 ## 2. Critic / Reviewer (Evaluator-Optimizer) loops
 กำลังค้นคว้า
