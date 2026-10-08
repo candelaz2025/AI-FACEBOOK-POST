@@ -1,6 +1,6 @@
 # PANGLAB — Design Plan (UX/UI)
 
-> สถานะ: Draft v0.1 · 2026-10-07 · อ่านคู่กับ [PRD.md](./PRD.md) และ [ARCHITECTURE.md](./ARCHITECTURE.md)
+> สถานะ: **Draft v0.2** · 2026-10-08 · อ่านคู่กับ [PRD.md](./PRD.md) และ [ARCHITECTURE.md](./ARCHITECTURE.md) · v0.2 ปรับตาม [research/00-SYNTHESIS.md](./research/00-SYNTHESIS.md)
 
 ## 1. ชื่อแบรนด์ (Naming)
 
@@ -16,11 +16,13 @@
 | ชื่อ | ความหมาย / มุม | จุดแข็ง | จุดอ่อน |
 |---|---|---|---|
 | **PANGLAB (เลือก)** | ปัง + Lab | สื่อผลลัพธ์, จำง่าย, ไทยแท้แต่อ่านเป็นอังกฤษได้ | คนต่างชาติไม่เข้าใจคำว่า "ปัง" |
-| SAENG (แสง) | แสงส่องแบรนด์ | สั้น ดูพรีเมียม | ผูกกับ "content" ได้ไม่ชัด |
+| SAENG (แสง) | แสงส่องแบรนด์ | สั้น ดูพรีเมียม | ผูกกับ "content" ได้ไม่ชัด และเป็นคำทั่วไปที่หลายบริษัทใช้อยู่แล้ว (`saeng.co` ถูกจดแล้ว) [24] |
 | TAMJAI (ตามใจ) | AI ที่ทำตามใจแบรนด์ | เน้นความเป็น brand-aware | ชนกับแบรนด์อาหารที่มีอยู่แล้ว |
-| JAIBRAND | ใจ + Brand | อบอุ่น เป็นมิตร | ยาวและธรรมดา |
+| JAIBRAND (**สำรองอันดับ 1**) | ใจ + Brand | อบอุ่น เป็นมิตร, `.com/.ai/.co/.app` ยังว่าง และไม่พบบริษัทที่ใช้ชื่อนี้ [24] | ยาวและธรรมดา |
 
-> ⚠️ **ยังต้องทำก่อน launch:** ค้นเครื่องหมายการค้าที่ DIP (กรมทรัพย์สินทางปัญญา) และ WIPO Global Brand DB, เช็กโดเมน `panglab.ai` / `panglab.co` / `panglab.app` และ handle `@panglab` บน FB/IG/TikTok/LINE OA ตอนนี้ทำได้แค่ค้นเว็บเบื้องต้น ยังไม่ใช่ trademark clearance
+> **สถานะการตรวจชื่อ (2026-10-08, [research/24](./research/24-naming-trademark.md)):** registry lookup พบว่า `panglab.ai`, `.app`, `.co`, `.io`, `.studio` และ `getpanglab.com` ยังว่าง ส่วน `panglab.com` มีคนจดแล้ว (ไม่ทราบว่าใครหรือใช้ทำอะไร) ค้นเว็บไม่พบบริษัทหรือผลิตภัณฑ์ชื่อ PangLab/ปังแล็บ ในวงการ software/marketing (เจอแค่แล็บวิจัยในมหาวิทยาลัย) และ aggregator เครื่องหมายการค้าก็ไม่พบ PANGLAB ส่วน PANLABS (USPTO) ถูกยกเลิกไปแล้วตั้งแต่ 2014
+>
+> ⚠️ **ยังไม่ใช่ trademark clearance:** ยังไม่ได้ค้นฐานข้อมูล DIP/WIPO โดยตรง และยังไม่ได้เช็ก `.co.th` กับ handle `@panglab` เพราะถูก proxy บล็อก ไทยให้สิทธิ์เครื่องหมายการค้ากับผู้ยื่นก่อน จึงควรจด `panglab.ai` และยื่นเครื่องหมายการค้า (Nice 9/35/42) โดยเร็ว อีกเรื่องคือคำว่า "ปัง" ยังแปลว่าขนมปังด้วย ในหมวดอาหารจึงน่าจะมีชื่อที่ขึ้นต้นด้วย ปัง อยู่มาก
 
 ## 2. หลักการออกแบบ (Design Principles)
 
@@ -31,7 +33,8 @@
 | **Brand DNA is visible** | ทุกชิ้นงานแสดงชิป "ตรงแบรนด์ 92%" พร้อมเหตุผล | Trust ต้องอธิบายได้ (explainable AI) |
 | **Credits are calm** | ราคาเครดิตแสดงก่อนกด generate เสมอ ไม่มีการตัดเครดิตแบบไม่รู้ตัว | Loss aversion: ความโปร่งใสลดความรู้สึกเสีย |
 | **Thai-first, mobile-first** | เจ้าของ SME ส่วนใหญ่อนุมัติงานผ่านมือถือ ทุก flow หลักต้องจบได้ใน 1 มือ | Context of use |
-| **Progressive autonomy** | เริ่มที่ "อนุมัติทีละโพสต์" แล้วค่อยปลดล็อก "Autopilot" เมื่อความเชื่อใจสูงขึ้น | Trust ladder / Endowed progress |
+| **Progressive autonomy** | ระดับ L1 อนุมัติทุกชิ้น → L2 อนุมัติอัตโนมัติเมื่อผ่านเกณฑ์ (มีช่วง veto) → L3 Autopilot ปลดล็อกตามประวัติ และผู้ใช้ต้องเลือกเปิดเอง | Trust calibration (Lee & See 2004), levels of automation (Parasuraman 2000), Microsoft HAX G8/G9 [25] |
+| **Honest progress** | แสดงขั้นตอนจริงของ agent เป็นภาษาไทย ห้ามหน่วงเวลาปลอม และใช้ percent-done เมื่อรอนานกว่า ~10 วินาที | Labor illusion (Buell & Norton 2011) ได้ผลก็ต่อเมื่อผลลัพธ์ดี, NN/g [25] |
 
 ## 3. Information Architecture
 
@@ -138,6 +141,8 @@ Push/LINE แจ้งเตือน "มี 3 โพสต์รออนุ�
 
 Kanit คงไว้จากแอปเดิม (CLAUDE.md) เพื่อความต่อเนื่อง แต่ย้ายไปใช้กับหัวข้อเท่านั้น ส่วนเนื้อความใช้ IBM Plex Sans Thai ซึ่งอ่านภาษาไทยที่ขนาดเล็กได้ดีกว่า ทั้งสองฟอนต์มีบน Google Fonts
 
+**Overlay font whitelist (ข้อความบนภาพโพสต์, ยืนยัน license OFL จาก METADATA.pb แล้ว [18]):** Kanit, Prompt, Anuphan, IBM Plex Sans Thai, Noto Sans Thai Looped, Sarabun, Bai Jamjuree, Chakra Petch และ Mali ทุกตัวต้องผ่าน visual regression test เรื่องสระซ้อน วรรณยุกต์ และไม้ยมก ก่อนเปิดให้เลือกใน Brand DNA
+
 ### 6.3 Spacing / Radius / Elevation
 
 ใช้ spacing ฐาน 4px (4, 8, 12, 16, 24, 32, 48, 64) radius `sm 8 / md 12 / lg 16 / full` และเงา 3 ระดับเท่านั้น (`card`, `popover`, `modal`) ทั้งหมดเป็น CSS variables ที่ map เข้า Tailwind v4 `@theme`
@@ -148,8 +153,11 @@ Kanit คงไว้จากแอปเดิม (CLAUDE.md) เพื่อ�
 |---|---|---|
 | `Button` | primary, secondary, ghost, **ai** (violet + sparkle), danger · loading/disabled | ปุ่ม `ai` แสดงค่าเครดิตในปุ่มเสมอ เช่น "สร้าง · 1 เครดิต" |
 | `PostCard` | draft, pending, scheduled, published, failed | มีชิปช่องทาง (FB/IG), Brand-fit score, เวลา |
-| `CreditMeter` | normal, low (<20%), empty | กดแล้วเปิด top-up sheet |
-| `BrandFitChip` | 0–100 + tooltip เหตุผล | ผลจาก QA Critic agent |
+| `CreditMeter` | normal, low (<20%), empty | แสดงเป็น "X เครดิต ≈ Y โพสต์" กดแล้วเปิด top-up / auto-refill sheet [25] |
+| `ApprovalQueue` | batch, sort by brand-fit ↑, approve / edit / request-changes / regenerate, revert | ใช้แบบ swipe บนมือถือ [25] |
+| `AutonomyLevel` | L1 / L2 / L3 + เงื่อนไขปลดล็อก | ผู้ใช้ต้องเปิดเอง (opt-in) |
+| `AiLabel` | badge "สร้างด้วย AI" / "แก้ไขด้วย AI" | ตามประกาศ สคบ. [23] |
+| `BrandFitChip` | 0–100 + รายการเกณฑ์ที่ไม่ผ่าน (กดแก้ได้) | คะแนนคำนวณในโค้ดจาก pass/fail ไม่ใช่ตัวเลขที่ LLM ให้มา [28] |
 | `PlatformPreview` | FB feed, IG feed, IG story/reel | reuse แนวคิดจาก `components/PostPreview.tsx` เดิม |
 | `AgentProgress` | queued → planning → writing → designing → reviewing → done | แสดงสถานะ subagent แบบ real-time (สร้างความรู้สึกว่ามี "ทีม" ทำงานให้: labor illusion) |
 | `EmptyState` | first-use, no-results, error | ต้องมี CTA ไป action ถัดไปเสมอ |

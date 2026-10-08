@@ -1,6 +1,6 @@
 # PANGLAB — Technical Architecture & Build Plan
 
-> สถานะ: Draft v0.1 · 2026-10-07 · อ่านคู่กับ [PRD.md](./PRD.md)
+> สถานะ: **Draft v0.2** · 2026-10-08 · อ่านคู่กับ [PRD.md](./PRD.md) · v0.2 ปรับตาม [research/00-SYNTHESIS.md](./research/00-SYNTHESIS.md) (`[NN]` = รายงาน `research/NN-*.md`)
 
 ## 1. Tech Stack (คำแนะนำ)
 
@@ -8,13 +8,15 @@
 |---|---|---|---|
 | Frontend + BFF | **Next.js (App Router) + React 19 + TypeScript** | SSR สำหรับ landing/SEO, server actions เก็บ API key ไว้ฝั่ง server, ทีมใช้ React อยู่แล้ว | Vite SPA + Hono API |
 | UI | **Tailwind CSS v4 (build-time) + Radix primitives + Pang UI tokens** | เลิกใช้ Tailwind CDN ที่ไม่เหมาะกับ production | shadcn/ui |
-| DB / Auth / Storage | **Supabase** (Postgres + RLS, Auth, Storage) | multi-tenant ด้วย RLS, มี Storage สำหรับไฟล์สื่อ, ตั้งค่า LINE Login ผ่าน OIDC ได้ | Neon + Clerk + R2 |
-| Background jobs / Scheduler | **Inngest** (durable functions + cron + retries) | agent pipeline หลายขั้นและ scheduled publish ต้อง retry ได้และ idempotent | Trigger.dev, pg-boss |
-| AI | **Google Gemini API** ผ่าน `@google/genai` (ฝั่ง server เท่านั้น) + model registry | ต่อยอดจาก codebase เดิม | Vertex AI (ใช้ตอนต้องการ SLA/region) |
-| Image post-processing | `sharp` (แปลง PNG→JPEG สำหรับ IG, resize, วาง text overlay ด้วยฟอนต์ไทย) | IG รับเฉพาะ JPEG | Satori / resvg |
-| Payments | **Stripe Checkout** (PromptPay + บัตร) | dev tooling ดี, PromptPay 1.65% | Opn/Omise (ค่าธรรมเนียมเท่ากัน) |
-| Hosting | Vercel (web) + Supabase Cloud (region Singapore) | ใกล้ผู้ใช้ไทย | Cloudflare |
-| Observability | Sentry + OpenTelemetry traces ต่อ agent run + Langfuse สำหรับ prompt/cost | ต้องเห็นต้นทุนต่อเครดิต | Helicone |
+| DB / Auth / Storage | **Supabase** (Postgres + RLS, Auth, Storage) | multi-tenant ด้วย RLS, มี Storage สำหรับไฟล์สื่อ ⚠️ LINE web login เซ็น token ด้วย HS256 จึงอาจผ่าน custom OIDC (JWKS) ไม่ได้ ต้องทำ spike ก่อน ถ้าไม่ผ่านให้เขียน callback เองแล้ว verify ที่ LINE `/oauth2/v2.1/verify` [27] | Neon + Clerk + R2 |
+| Background jobs / Scheduler | **Inngest** (durable steps + `step.sleepUntil` + retries) | agent pipeline หลายขั้นที่เวลาส่วนใหญ่รอ AI ซึ่ง Inngest คิดเงินตาม step จึงถูกกว่า Trigger.dev ที่คิดตามเวลา container (~$99/1M steps) [27] | Trigger.dev (plan B), pg-boss |
+| AI | **Google Gemini API (paid tier เท่านั้น)** ผ่าน `@google/genai` ฝั่ง server + model registry + structured output ด้วย `responseJsonSchema` จาก Zod [14][28] | ต่อยอดจาก codebase เดิม | Vertex AI asia-southeast1 (ถ้าต้องการ data residency) + fallback adapter ภายนอก (Seedance/Kling สำหรับวิดีโอ) [16] |
+| Image post-processing | `sharp` + HarfBuzz shaping (เช่น `harfbuzzjs`) + `Intl.Segmenter('th')`/ICU4X สำหรับ overlay ภาษาไทย, เขียน IPTC `DigitalSourceType` กลับลงไฟล์ [18][11] | IG รับเฉพาะ JPEG และ image model ยังวาดภาษาไทยไม่ได้ [15] | Satori / resvg |
+| Payments | **`PaymentProvider` abstraction** → Stripe (PromptPay สำหรับแพ็กครั้งเดียว, บัตรสำหรับ auto-refill) | PromptPay ตัดเงินอัตโนมัติรายเดือนไม่ได้ทั้ง Stripe และ Opn [22] | Opn/Omise (ค่าธรรมเนียมเท่ากัน) |
+| Tax invoice | ผู้ให้บริการ e-Tax ภายนอก (FlowAccount / PEAK API) | ไม่ต้องทำ e-Tax เอง [22] | ออกเอง (PDF/A-3) |
+| Brand scan | Firecrawl `branding` + Brandfetch Logo API (ฟรี 500k/เดือน) + Color Thief | ห้าม scrape FB/IG [17] | Gemini URL context |
+| Hosting | Vercel **pin ไว้ที่ `sin1`** (ค่าเริ่มต้นคือ iad1/US) + Supabase `ap-southeast-1`, ย้ายสื่อไป R2 เมื่อ egress สูง [27] | ใกล้ผู้ใช้ไทย, PDPA ไม่ได้บังคับให้ข้อมูลอยู่ในไทยแต่ต้องมีฐานตาม ม.28/29 | Cloudflare |
+| Observability / Evals | Sentry + Langfuse (MIT, OTel) trace ต่อ agent run โดย mask PII + Thai golden set 30–50 brief เป็น CI gate [28] | ต้องเห็นต้นทุนต่อเครดิตและกันคุณภาพตกเมื่อเปลี่ยน model | Helicone |
 
 ## 2. System Overview
 
@@ -40,7 +42,7 @@
 
 ## 3. Agent Architecture: Orchestrator + Subagents
 
-นี่คือหัวใจของ "AI Marketing Agent" Orchestrator เป็นตัววางแผนและแจกงาน ส่วน subagent แต่ละตัวมีหน้าที่แคบและผลลัพธ์มี schema ชัดเจน (structured output) จึงทดสอบและเปลี่ยนโมเดลได้ทีละตัว
+นี่คือหัวใจของ "AI Marketing Agent" **หลักการ v0.2:** ใช้ workflow ตายตัวทุกครั้งที่ลำดับงานแน่นอน และใช้ LLM orchestrator เฉพาะงานที่ต้องวางแผนจริงเท่านั้น ระบบ multi-agent ใช้ token ราว 15 เท่าของแชตทั่วไป จึงควรเพิ่มความซับซ้อนเมื่อวัดได้ว่าช่วยให้ผลดีขึ้นเท่านั้น [28] Orchestrator เป็นตัววางแผนและแจกงาน ส่วน subagent แต่ละตัวมีหน้าที่แคบและผลลัพธ์มี schema ชัดเจน (structured output) จึงทดสอบและเปลี่ยนโมเดลได้ทีละตัว
 
 ```
                          ┌──────────────────────────────┐
@@ -60,31 +62,34 @@
 
 | Agent | Input | Output (JSON schema) | Model (ค่าเริ่มต้น) |
 |---|---|---|---|
-| **Orchestrator** | goal, period, products, Brand DNA, insights ล่าสุด | `ContentPlan { items[]: {date, pillar, format, product_id, angle, platform} }` | Gemini Flash รุ่นล่าสุด (เช่น `gemini-3.8-flash`) |
-| **Brand DNA Analyst** | URL / ข้อความที่ scrape มา / โพสต์เก่า | `BrandDNA { voice, audience[], usp[], palette[], do_words[], dont_words[], products[] }` | Gemini Flash |
-| **Copywriter** | plan item + Brand DNA | `Caption { hook, body, cta, hashtags[], variants[2] }` | Gemini Flash (temp 0.8) |
-| **Art Director** | plan item + Brand DNA + รูปสินค้า | `ImageBrief { prompt, aspect, overlay_text, layout }` → เรียก image model | `gemini-3.1-flash-image` (Nano Banana 2) · premium: `gemini-3-pro-image-preview` |
+| **Orchestrator** (ใช้เฉพาะ Campaign) | goal, period, products, Brand DNA, insights ล่าสุด | `ContentPlan { items[]: {date, pillar, format, product_id, angle, platform} }` | `gemini-3.8-flash` (fallback `gemini-3.7-flash`) |
+| **Brand DNA Analyst** | ผล deterministic extraction (Firecrawl/Brandfetch/Color Thief) + ข้อความเว็บ + โพสต์จากเพจที่เชื่อมแล้ว | `BrandDNA { voice, thai_traits, audience[], usp[], palette[], do_words[], dont_words[], products[] }` ทุก field มี `provenance` + `confidence` [17] | `gemini-3.8-flash` |
+| **Copywriter** | plan item + Brand DNA + **ภาพที่สร้างเสร็จแล้ว** [05] | `Caption { hook, body, cta, hashtags[], variants[3] }` | `gemini-3.8-flash` (temp 0.8) · budget: `gemini-3.1-flash-lite` |
+| **Art Director** | plan item + Brand DNA + รูปสินค้า (ส่งเป็น reference ทุกครั้ง) | `ImageBrief { prompt, aspect, overlay_text, layout }` → เรียก image model (prompt ห้ามมีข้อความไทย) | `gemini-nano-banana-2.1` ($0.034/1K) · premium: `gemini-3-pro-image` · eco: `gemini-3.1-flash-lite-image` (สูงสุด 1K) [15] |
 | **Scheduler** | ประวัติ engagement, quota | `slot { publish_at, reason }` | rule-based + stats (ไม่ใช้ LLM ใน MVP) |
-| **QA Critic** | caption + image + Brand DNA | `Review { brand_fit: 0–100, reasons[], policy_flags[], verdict: pass/revise }` | Gemini Flash (vision) |
-| **Video Producer** (Phase 2) | plan item + key image | วิดีโอ 9:16 | `veo-3.1-lite-generate-preview` / `veo-3.1-fast-generate-preview` |
+| **QA Critic** | caption + image + Brand DNA + ผลตรวจด้วยโค้ด | `Review { criteria[]: {id, pass, critique}, policy_flags[], product_match }` โดยให้**โค้ดเป็นตัวคำนวณ** `brand_fit` 0–100 จาก criteria ไม่ใช่ LLM [28] | ต้องใช้**คนละ model กับ Copywriter** (เช่น `gemini-3-pro-image` สำหรับ vision หรือ `gemini-3.7-flash`) และ calibrate กับ label จากผู้เชี่ยวชาญไทย |
+| **Video Producer** (V1) | plan item + key image (เฟรมแรก) | วิดีโอ 9:16 | `veo-3.1-lite-generate-preview` (720p/1080p) · `veo-3.1-fast-generate-001` (GA) · fallback ภายนอก: Seedance/Kling [16] (Sora API ปิดแล้วตั้งแต่ 24 ก.ย. 2026) |
 
-> ⚠️ **Model IDs ต้องตรวจซ้ำตอนเริ่ม build** ข้อมูลจาก subagent ที่ค้นหน้า [deprecations](https://ai.google.dev/gemini-api/docs/deprecations) ระบุว่า `imagen-4.0-generate-001` และ `veo-2.0-generate-001` ที่แอปเดิมใช้ **ปิดไปแล้ว** และ `gemini-2.5-flash` จำกัดเฉพาะผู้ใช้เดิม ข้อมูลนี้มาจากสรุปผลการค้นหา ไม่ได้เปิดอ่านหน้าเอกสารโดยตรง (proxy บล็อก) ต้องเก็บ model ID ไว้ในตาราง `model_registry` ห้าม hardcode
+> ⚠️ **Model IDs ต้องตรวจซ้ำตอนเริ่ม build** (ส่วนใหญ่มาจากสรุปผลค้นหาของหน้าทางการ [14][15][16]) ที่ปิดหรือจำกัดแล้ว: `imagen-4.0-generate-001` (ปิด 17 ส.ค. 2026), `veo-2.0-generate-001` (ปิด 30 มิ.ย. 2026), `gemini-2.5-flash` (จำกัดเฉพาะผู้ใช้เดิม) ส่วน `gemini-3.1-flash-image` (NB2) มีข่าวว่าจะปิดวันที่ 29 ต.ค. 2026 และ `gemini-3-flash` มีแค่ `-preview` เท่านั้น เก็บ model ID, ราคา และ capability (9:16, image-to-video, audio, max resolution) ไว้ในตาราง `model_registry` ห้าม hardcode และคิดต้นทุนด้วยราคาปี 2027 ($1.50/$7.50 ต่อ 1M tokens สำหรับ 3.x Flash)
 
 ### 3.1 Pipeline ของ Quick Post 1 ชิ้น (Inngest function `agent.run`)
 
+Quick Post เป็น **step chain ตายตัว** ไม่ต้องให้ LLM orchestrator ตัดสินใจลำดับ [28] event ส่งเฉพาะ ID [27]
+
 ```
-1. reserve credits (ledger: status=reserved)
-2. step.run("copy")   → Copywriter
-3. step.run("brief")  → Art Director (สร้าง ImageBrief)
-4. step.run("image")  → image model → Storage (PNG ต้นฉบับ)
-5. step.run("overlay")→ sharp: วางโลโก้/ข้อความไทย/ราคา → JPEG
-6. step.run("review") → QA Critic → ถ้า verdict=revise ให้กลับไปข้อ 2 หรือ 3 (สูงสุด 1 รอบ)
-7. save post (status=pending_approval) + brand_fit
-8. commit credits (หรือ refund ถ้าล้มเหลวจากฝั่งระบบ)
-9. realtime notify UI
+1. reserve credits (กรณีแย่สุด รวมรอบแก้ 1 รอบ) (ledger: status=reserved)
+2. step.run("brief")   → Art Director (ImageBrief)
+3. step.run("image")   → image model + product reference → Storage (PNG)
+4. step.run("overlay") → sharp + HarfBuzz: โลโก้/ข้อความไทย/ราคา → JPEG + IPTC DigitalSourceType
+5. step.run("copy")    → Copywriter (เห็นภาพแล้ว) → 3 variants
+6. step.run("rules")   → ตรวจด้วยโค้ด: คำต้องห้าม, คำ อย., ราคาตรง catalog, CTA, Thai linter
+7. step.run("critic")  → QA Critic (LLM rubric pass/fail + product_match)
+8. ถ้ามีเกณฑ์ไม่ผ่าน → แก้เฉพาะส่วนที่ไม่ผ่าน 1 รอบ (copy หรือ image)
+9. brand_fit = f(criteria) ในโค้ด → save post (pending_approval)
+10. commit credits ตามที่ใช้จริง / refund ส่วนที่เหลือ → realtime notify
 ```
 
-Campaign ใช้ `step.invoke` แบบ fan-out ต่อ plan item โดยจำกัด concurrency ต่อ workspace ไว้ที่ 5 ส่วนงานที่ไม่เร่งรีบใช้ Gemini Batch API เพื่อลดต้นทุนลงครึ่งหนึ่ง
+Campaign: ใช้ Orchestrator วางแผน แล้ว fan-out แต่ละ plan item ผ่าน `step.invoke` ไปยัง chain ข้างบน จำกัด concurrency ต่อ workspace ที่ 5 และต่อ social account เพื่อไม่ชน quota Batch API (ลด 50% แต่ต้องรอได้ถึง 24 ชม. และใช้ส่วนลดร่วมกับ cache discount ไม่ได้) ใช้เฉพาะงานกลางคืนและ eval [28] วิดีโอใช้ `step.sleep` แล้วค่อย poll ทีละ step แยกกัน [27]
 
 ## 4. Data Model (Postgres)
 
@@ -105,8 +110,12 @@ post_metrics      (post_target_id, captured_at, reach, impressions, engagement, 
 credit_ledger     (id, workspace_id, delta numeric, reason, ref_type, ref_id, status, created_at)
                    -- status: reserved|committed|refunded ; balance = SUM(committed + reserved)
 orders            (id, workspace_id, pack, amount_thb, vat_thb, stripe_session_id, status, tax_info jsonb)
-agent_runs        (id, workspace_id, kind, input jsonb, output jsonb, model, cost_usd, latency_ms, status)
-model_registry    (role, model_id, params jsonb, active, fallback_model_id)
+agent_runs        (id, workspace_id, kind, input jsonb, output jsonb, model, prompt_version, trace_id,
+                   cached_tokens, judge_scores jsonb, cost_usd, latency_ms, status)
+model_registry    (role, model_id, params jsonb, price jsonb, capabilities jsonb, active, fallback_model_id, sunset_at)
+metric_registry   (platform, logical_name, api_metric, valid_from, valid_to)   -- Meta ถอด/เปลี่ยน metric บ่อย [08][09]
+billing_profiles  (workspace_id, legal_name, tax_id, branch, address)          -- ใบกำกับภาษี [22]
+eval_cases        (id, brief jsonb, expected jsonb, labels jsonb)               -- Thai golden set [28]
 ```
 
 ทุกตารางที่มี `workspace_id` หรือ `brand_id` เปิด RLS ด้วย policy "member of workspace" ส่วน `token_enc` เข้ารหัสด้วย key ใน KMS/secret ของ server ห้ามส่งค่านี้ไปยัง client
@@ -115,13 +124,16 @@ model_registry    (role, model_id, params jsonb, active, fallback_model_id)
 
 | เรื่อง | การออกแบบ |
 |---|---|
-| Login | Facebook Login for Business → ได้ user token → แลกเป็น long-lived → ดึง Page tokens (`/me/accounts`) และ IG business id (`/{page}?fields=instagram_business_account`) |
-| Scopes | `pages_show_list`, `pages_manage_posts`, `pages_read_engagement`, `instagram_basic`, `instagram_content_publish`, `business_management` (+ `read_insights`/`instagram_manage_insights` สำหรับ analytics, ตรวจรายการสุดท้ายตอนยื่น App Review) |
+| Login | Facebook Login for Business (`config_id` แทน `scope`) → long-lived user token → Page tokens จาก `/me/accounts` + เพจใน Business Manager (`/me/businesses` → owned/client pages) และ IG business id · Page token ที่ได้จาก long-lived user token จะแสดงว่า "Expires: Never" แต่ใช้ไม่ได้เมื่อผู้ใช้ถอนสิทธิ์, เปลี่ยนรหัส หรือเสีย role [08][07] |
+| Scopes | รอบ 1: `pages_show_list`, `pages_manage_posts`, `pages_read_engagement` (ใช้อ่าน Insights ได้ด้วย ไม่ต้องขอ `read_insights`), `instagram_basic`, `instagram_content_publish` · รอบ 2: `instagram_manage_insights`, `business_management` · การขอ `instagram_basic`/`business_management` ทำให้ต้องผ่าน Tech Provider verification [08][10] |
 | FB publish | ภาพเดี่ยว `POST /{page}/photos` · หลายภาพ: upload `published=false` แล้ว `POST /{page}/feed` + `attached_media` (ย้ายตรรกะจาก `App.tsx:576-660` เดิมมาไว้ฝั่ง worker) |
-| IG publish | `POST /{ig}/media` (image_url จาก Supabase Storage signed URL, JPEG) → poll `status_code` → `POST /{ig}/media_publish` · carousel: children containers ≤10 |
-| Scheduling | ใช้ scheduler ของเราเองทั้ง FB และ IG: Inngest cron ทุก 1 นาทีหยิบ `post_targets` ที่ถึงเวลา โดยใช้ idempotency key = `post_target_id` |
-| Quota | เช็ก `GET /{ig}/content_publishing_limit` ก่อนตั้งเวลา (100 / 24 ชม.) |
-| Graph version | กำหนดใน config (เช่น `META_GRAPH_VERSION`) ไม่ pin ไว้ในโค้ดเหมือนเดิม (v20.0) |
+| IG publish | สร้าง container ล่วงหน้า ~5 นาที: `POST /{ig}/media` (JPEG signed URL อายุ ≥1 ชม., `is_ai_generated=true`) → poll `status_code` ทุก ~1 นาทีนานสุด 5 นาที (IN_PROGRESS/FINISHED/ERROR/EXPIRED) → `POST /{ig}/media_publish` · carousel ≤10 (ตั้ง `is_ai_generated` ที่ parent) [09][11] |
+| Scheduling | scheduler ของเราเองทั้ง FB และ IG: สร้าง Inngest function ต่อ `post_target` ที่ใช้ `step.sleepUntil(publish_at)` (ไม่ใช้ cron ทุกนาทีที่กิน ~43k steps/เดือนแม้ไม่มีงาน) + sweep job หาโพสต์ที่พลาด ทุก 15 นาที, idempotency แบบ arm → confirm → publish ด้วย key = `post_target_id` [27][07] |
+| Quota | IG: อ่าน `quota_total` จาก `GET /{ig}/content_publishing_limit` (เอกสารขัดกันระหว่าง 100 กับ 50 ค่าเริ่มต้นจึงใช้ 50) · FB Reels 30/Page/24 ชม. · TikTok 15/วัน [09][08][12] |
+| Errors | แบ่งเป็น 4 ประเภท: retry (exponential backoff) / refresh token / disconnect / bad body · token health ตรวจด้วย `debug_token` + error 190 ทุกวัน [07][08] |
+| Insights | `page/post_media_view` (Views), `*_total_media_view_unique` (Viewers), IG `views`/`reach`/`total_interactions` ผ่าน `metric_registry` (impressions/reach เดิมถูกถอดไปแล้ว) [08][09] |
+| Graph version | เก็บใน config (`META_GRAPH_VERSION`, ปัจจุบัน v26.0) + smoke test ก่อนทุกวันบังคับใช้ (v26 breaking changes มีผลกับทุกเวอร์ชันในวันที่ 27 ต.ค. 2026) [08] |
+| Implementation | `packages/meta` **เขียนเองแบบ clean-room** ห้าม copy โค้ด Postiz (AGPL-3.0) [07] |
 
 ## 6. Security Checklist (แก้หนี้จาก codebase เดิม)
 
@@ -167,10 +179,10 @@ panglab/                       # แอปใหม่ (monorepo ด้วย pn
 
 | Track | Owner (agent/dev) | Sprint 1–2 (Foundation) | Sprint 3–5 (MVP) | Sprint 6–8 (V1) |
 |---|---|---|---|---|
-| A · Platform | Infra agent | monorepo, Supabase, auth (Google/LINE/OTP), RLS, CI | credits ledger, Stripe PromptPay | roles, client portal |
-| B · Agents | AI agent | model registry, Copywriter + Art Director | Orchestrator, QA Critic, Brand DNA auto-scan, overlay | learning loop, video |
-| C · Meta | Integration agent | ยื่น Business Verification, OAuth | publish worker FB/IG, quota, retry, token health | Reels/Stories, insights sync |
+| A · Platform | Infra agent | monorepo, Supabase/Vercel ที่ SG, **spike LINE auth**, auth (Google/LINE/OTP), RLS, CI + license check | credits ledger, Stripe PromptPay | roles, client portal |
+| B · Agents | AI agent | model registry, Thai overlay (HarfBuzz), Copywriter + Art Director, Thai golden set | Orchestrator, QA Critic, Brand DNA auto-scan, overlay | learning loop, video |
+| C · Meta | Integration agent | จดนิติบุคคล + ยื่น Business Verification (สัปดาห์ 0–1), OAuth (`config_id`) | publish worker FB/IG, quota, retry, token health | Reels/Stories, insights sync |
 | D · Frontend | UI agent | Pang UI tokens + components | onboarding, create, editor, calendar, approval | campaign studio, insights, LINE approval |
 | E · QA | QA agent | test harness (Vitest + Playwright) | e2e: onboarding→publish (Meta test page) | load test scheduler |
 
-**Definition of Done ทุก track:** typecheck + lint + unit test ผ่าน, ทุกข้อความ UI เป็นภาษาไทยผ่าน i18n, trace ของ agent มี cost/latency และไม่มี secret ใน client bundle (ตรวจด้วย `grep` ใน CI)
+**Definition of Done ทุก track:** typecheck + lint + unit test ผ่าน, ทุกข้อความ UI เป็นภาษาไทยผ่าน i18n, trace ของ agent มี cost/latency, ไม่มี secret ใน client bundle (ตรวจด้วย `grep` ใน CI), Thai golden set ไม่ถดถอย และ license check ผ่าน
