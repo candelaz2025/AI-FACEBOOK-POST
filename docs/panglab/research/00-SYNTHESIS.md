@@ -52,6 +52,8 @@ PANGLAB ยังสร้างตามแผนเดิมได้ แต�
 | BILL-5 | ใบกำกับภาษีเต็มรูป | billing profile (เลขผู้เสียภาษี/สาขา) + ผู้ให้บริการ e-Tax ภายนอก, แสดงราคารวม VAT | กฎสรรพากร | 22 |
 | BRAND-1/3 | กรอกเอง + auto-scan | 3a สแกนเว็บ (Firecrawl branding + Brandfetch Logo), 3b ดึงเฉพาะเพจที่เชื่อมผ่าน Graph API, **ห้าม scrape FB/IG**, SLA ≤60 วินาที, ทุก field มี provenance + confidence | ToS ของ Meta | 17, 26 |
 | BRAND (ใหม่) | – | BRAND-7 เรียนรู้น้ำเสียงจากตัวอย่างไม่เกิน 8 ชิ้น, BRAND-8 preview with/without voice, เพิ่มลักษณะเฉพาะภาษาไทย (สรรพนาม, คำลงท้าย, ความถี่อีโมจิ) | Jasper/Predis | 06, 05, 17 |
+| GEN-6 | Brand-fit score 0–100 จาก LLM | คำนวณคะแนนในโค้ดจาก pass/fail ทีละเกณฑ์: ตรวจด้วยโค้ดก่อน (คำต้องห้าม, คำ อย., ราคาตรง DB, CTA) แล้วค่อยใช้ LLM rubric, critic ต้องใช้คนละ model กับ Copywriter และ calibrate กับ label จากผู้เชี่ยวชาญไทย | LLM judge มี bias และให้คะแนนเป็นตัวเลขกว้างๆ ได้ไม่ดี | 28 |
+| EVAL/OBS (ใหม่) | – | golden set 30–50 brief เป็น CI gate ทุกครั้งที่แก้ prompt หรือ model, เก็บ diff ตอนอนุมัติ/แก้เป็น label ฟรี, Langfuse trace ต่อ agent.run (mask PII), reserve เครดิตเผื่อกรณีแย่สุดที่รวมรอบแก้แล้ว | evals | 28 |
 | GEN-1/5 | caption + ภาพ | เขียน caption หลังเห็นภาพที่สร้างแล้ว, ให้ 2–3 ตัวเลือก, autosave | Predis + เสียงบ่นของผู้ใช้ Ocoya | 05 |
 | GEN-4 | Album P0 | ตั้ง Album/Carousel เป็นรูปแบบเริ่มต้นที่แนะนำ | IG carousel 0.50–0.55% engagement | 30 |
 | GEN-7 | overlay ข้อความไทย | ใช้ HarfBuzz shaping + `Intl.Segmenter`/ICU4X ตัดบรรทัด, normalize เป็น NFC, ใช้ฟอนต์จาก whitelist OFL, ทำ visual regression test | ภาษาไทยในภาพ AI ยังไม่น่าเชื่อถือ | 18, 15 |
@@ -79,7 +81,7 @@ PANGLAB ยังสร้างตามแผนเดิมได้ แต�
 | Section | ปัจจุบัน | เสนอให้เปลี่ยนเป็น | เหตุผล | รายงาน |
 |---|---|---|---|---|
 | ARCH §3 models | `gemini-3.8-flash`, `gemini-3.1-flash-image`, Veo 3.1 preview IDs | text `gemini-3.8-flash` (fallback `gemini-3.7-flash`, budget `gemini-3.1-flash-lite`) · image `gemini-nano-banana-2.1` (fallback `gemini-3-pro-image`, ส่วน `gemini-3.1-flash-lite-image` ใช้ได้เฉพาะ 1K) · video `veo-3.1-lite-generate-preview` / `veo-3.1-fast-generate-001` · คำนวณต้นทุนด้วยราคาปี 2027 | deprecations + ราคา | 14, 15, 16 |
-| ARCH §3 pipeline | Copy → Brief → Image → Review | Brief → Image → Copy (ดูภาพก่อนเขียน) → rule checks → LLM critic, ใช้ Batch API กับงาน campaign, cache Brand DNA | Predis + ต้นทุน | 05, 14, 28 |
+| ARCH §3 pipeline | Copy → Brief → Image → Review, Orchestrator ทุกงาน | Quick Post เป็น step chain ตายตัว (ไม่ใช้ LLM orchestrator) ใช้ Orchestrator เฉพาะวางแผน Campaign · ลำดับ Brief → Image → Copy (ดูภาพก่อนเขียน) → rule checks → LLM critic → แก้เฉพาะเกณฑ์ที่ไม่ผ่าน 1 รอบ · Batch API ใช้กับงานกลางคืน/eval เท่านั้น (รอได้ถึง 24 ชม.) · เพิ่มคอลัมน์ใน `agent_runs`: prompt_version, trace_id, cached_tokens, judge_scores | Anthropic "Building effective agents" + Predis | 05, 14, 28 |
 | ARCH §1 hosting | Vercel + Supabase SG | pin Vercel ที่ `sin1`, Supabase ที่ `ap-southeast-1`, แผนย้ายสื่อไป R2 เมื่อ egress สูงขึ้น | default region เป็น US | 27 |
 | ARCH §3.1 jobs | cron ทุกนาที | `step.sleepUntil` ต่อโพสต์ + sweep งานที่พลาด, poll Veo ด้วย `step.sleep`, ส่งเฉพาะ ID ใน event | ต้นทุน step ของ Inngest | 27, 07 |
 | ARCH §5 Meta | scopes + v20 | `config_id`, ไม่ต้องใช้ `read_insights`, pin Graph version + smoke test ก่อนทุกวันบังคับใช้, เขียน client แบบ clean-room (ห้าม copy Postiz) | Meta/AGPL | 07, 08 |
@@ -142,6 +144,6 @@ PANGLAB ยังสร้างตามแผนเดิมได้ แต�
 | 25 | UX approval & calendar | [25-ux-approval-calendar.md](./25-ux-approval-calendar.md) | กลาง |
 | 26 | Onboarding benchmarks | [26-onboarding-activation.md](./26-onboarding-activation.md) | กลาง |
 | 27 | Tech stack | [27-tech-stack.md](./27-tech-stack.md) | กลาง |
-| 28 | Agent architecture | [28-agent-architecture.md](./28-agent-architecture.md) | ดูในรายงาน |
+| 28 | Agent architecture | [28-agent-architecture.md](./28-agent-architecture.md) | กลาง |
 | 29 | GTM ไทย | [29-gtm-thailand.md](./29-gtm-thailand.md) | กลาง |
 | 30 | Social benchmarks ไทย | [30-social-benchmarks-th.md](./30-social-benchmarks-th.md) | กลาง |
