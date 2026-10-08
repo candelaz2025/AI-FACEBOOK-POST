@@ -15,5 +15,8 @@
 
 Imagen ไม่ปรากฏในหน้า pricing แล้ว (INFERRED: ถูกถอด/deprecate)
 
-## อื่น ๆ
+## ความสามารถ Nano Banana 2 (interim)
+Aspect ratios (Vertex docs ผ่าน search summary): 1:1, 3:2, 2:3, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9, 9:21 + ใหม่ 1:4, 4:1, 1:8, 8:1; สูงสุด 14 ภาพอ้างอิงต่อ prompt; resolution 512/1K/2K/4K. Lite: 1K เท่านั้น ~14 ratios. SynthID ทุกภาพ + C2PA.
+
+## Thai text / competitors
 กำลังค้นคว้า
